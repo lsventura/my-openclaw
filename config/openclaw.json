@@ -14,10 +14,10 @@
       "provider": "openrouter",
       "model": "moonshotai/kimi-k2",
       "memory": {
-        "flush_threshold": 40000,
-        "context_ttl_minutes": 360,
-        "keep_last_assistant": 3,
-        "search_mode": "hybrid"
+        "flush_threshold": 20000,
+        "context_ttl_minutes": 180,
+        "keep_last_assistant": 2,
+        "search_mode": "bm25"
       },
       "tools": ["shell", "filesystem", "web_search"]
     },
@@ -27,26 +27,6 @@
         "name": "Amora",
         "config_file": "agents/boss.yaml",
         "primary": true
-      },
-      {
-        "id": "finance",
-        "name": "FinanceBot",
-        "config_file": "agents/finance.yaml"
-      },
-      {
-        "id": "dev",
-        "name": "DevBot",
-        "config_file": "agents/dev.yaml"
-      },
-      {
-        "id": "research",
-        "name": "ResearchBot",
-        "config_file": "agents/research.yaml"
-      },
-      {
-        "id": "life",
-        "name": "LifeBot",
-        "config_file": "agents/life.yaml"
       }
     ]
   },
