@@ -18,6 +18,9 @@ ENV NODE_OPTIONS="--max-old-space-size=384"
 # Instalar OpenClaw globalmente
 RUN npm install -g openclaw
 
+# Verificar onde o binário foi instalado (aparece no build log)
+RUN which openclaw && openclaw --version
+
 # Diretório de trabalho
 WORKDIR /app
 
@@ -34,5 +37,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s \
   CMD curl -f http://localhost:3000/health || exit 1
 
-# Iniciar OpenClaw com limite explícito de memória
-CMD ["node", "--max-old-space-size=384", "/usr/local/lib/node_modules/openclaw/bin/openclaw.js", "start", "--config", "config/openclaw.json"]
+# Iniciar via sh — resolve o caminho do bin automaticamente em runtime
+CMD ["sh", "-c", "node --max-old-space-size=384 $(which openclaw) start --config config/openclaw.json"]
