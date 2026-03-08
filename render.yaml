@@ -1,0 +1,19 @@
+# ============================================================
+# Configuração do Render.com (Infrastructure as Code)
+# Opcional: use este arquivo para deploy automatizado
+# ============================================================
+
+services:
+  - type: web
+    name: my-openclaw
+    runtime: docker
+    plan: free
+    branch: main
+    healthCheckPath: /health
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false  # Preencher no dashboard do Render
+      - key: TELEGRAM_USER_ID
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
