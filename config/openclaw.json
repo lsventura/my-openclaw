@@ -1,45 +1,96 @@
 {
   "$schema": "https://openclaw.ai/schema/config.json",
-
-  "gateway": {
-    "port": 3000,
-    "mode": "local",
-    "bind": "lan"
+  "meta": {
+    "lastTouchedVersion": "2026.3.13",
+    "lastTouchedAt": "2026-03-15T03:43:37.908Z"
   },
-
-  "channels": {
-    "telegram": {
-      "enabled": true,
-      "botToken": "${TELEGRAM_BOT_TOKEN}",
-      "dmPolicy": "open",
-      "allowFrom": ["*"],
-      "groupPolicy": "open"
-    }
-  },
-
-  "agents": {
-    "defaults": {
-      "sandbox": { "mode": "off" },
-      "workspace": "~/.openclaw/workspace",
-      "memorySearch": { "enabled": false }
-    }
-  },
-
-  "tools": {
-    "profile": "full",
-    "elevated": {
-      "enabled": true,
-      "allowFrom": {
-        "telegram": ["${TELEGRAM_USER_ID}"]
-      }
-    }
-  },
-
   "env": {
     "OPENROUTER_API_KEY": "${OPENROUTER_API_KEY}",
     "TELEGRAM_BOT_TOKEN": "${TELEGRAM_BOT_TOKEN}",
     "TELEGRAM_USER_ID": "${TELEGRAM_USER_ID}",
     "BINANCE_API_KEY": "${BINANCE_API_KEY}",
     "BINANCE_API_SECRET": "${BINANCE_API_SECRET}"
+  },
+  "wizard": {
+    "lastRunAt": "2026-03-15T03:43:37.891Z",
+    "lastRunVersion": "2026.3.13",
+    "lastRunCommand": "configure",
+    "lastRunMode": "local"
+  },
+  "auth": {
+    "profiles": {
+      "openrouter:default": {
+        "provider": "openrouter",
+        "mode": "api_key"
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "openrouter/auto"
+      },
+      "models": {
+        "openrouter/deepseek/deepseek-v3.2": {},
+        "openrouter/deepseek/deepseek-r1-0528": {},
+        "openrouter/google/gemini-2.5-flash": {},
+        "openrouter/google/gemini-2.5-pro": {},
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free": {}
+      },
+      "workspace": "~/.openclaw/workspace",
+      "memorySearch": {
+        "enabled": false
+      },
+      "compaction": {
+        "mode": "safeguard"
+      },
+      "sandbox": {
+        "mode": "off"
+      }
+    }
+  },
+  "tools": {
+    "profile": "full",
+    "elevated": {
+      "enabled": true,
+      "allowFrom": {
+        "telegram": [
+          "${TELEGRAM_USER_ID}"
+        ]
+      }
+    }
+  },
+  "commands": {
+    "native": "auto",
+    "nativeSkills": "auto",
+    "restart": true,
+    "ownerDisplay": "raw"
+  },
+  "channels": {
+    "telegram": {
+      "enabled": true,
+      "dmPolicy": "open",
+      "botToken": "${TELEGRAM_BOT_TOKEN}",
+      "allowFrom": [
+        "*"
+      ],
+      "groupPolicy": "open",
+      "streaming": "partial"
+    }
+  },
+  "gateway": {
+    "port": 3000,
+    "mode": "local",
+    "bind": "lan",
+    "controlUi": {
+      "allowedOrigins": [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000"
+      ]
+    },
+    "auth": {
+      "mode": "token",
+      "token": "${OPENCLAW_GATEWAY_TOKEN}"
+    }
   }
 }
