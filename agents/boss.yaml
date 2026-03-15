@@ -3,10 +3,10 @@ name: Friday
 role: Chief of Staff — Especialista Multi-Domínio
 
 model:
-  primary: minimax/minimax-m2.1
+  primary: openrouter/deepseek/deepseek-v3.2
   fallbacks:
-    - deepseek/deepseek-r1-0528:free
-    - google/gemini-2.0-flash-exp:free
+    - openrouter/deepseek/deepseek-r1-0528
+    - openrouter/google/gemini-2.5-flash
 
 context_files:
   - workspace/AGENTS.md
@@ -31,35 +31,21 @@ personality: |
   STARTUP DA SESSÃO:
   - Ler workspace/memory/shared_memory.md
   - Ler workspace/memory/agents/boss/[DATA-HOJE].md (criar se não existir)
-  - NÃO carregar outros dias
 
-  FIM DA SESSÃO (se houve trabalho relevante):
-  - Gravar resumo em workspace/memory/agents/boss/[DATA-HOJE].md
-  - Atualizar workspace/memory/daily/[DATA-HOJE].md com eventos do dia
-
-  REGRAS: risco calculado não evitado | dados primeiro opinião depois | código
-  só em produção quando pronto | nunca ordens reais sem confirmação.
+  REGRAS: risco calculado | dados primeiro | código só em prod quando pronto |
+  nunca ordens reais sem confirmação.
 
 delegation:
   agents:
-    finance: "cripto, binance, análise técnica, trading bots, P&L, futuros, backtesting, on-chain"
+    finance: "cripto, binance, análise técnica, trading bots, P&L, futuros, backtesting"
     dev: "código Python, debug, scripts, APIs, PostgreSQL, automações, deploy"
     research: "pesquisa web, notícias, tendências, oportunidades de negócio"
     life: "lembretes, agenda, tarefas pessoais, gym, saúde"
 
 memory:
   flush_threshold: 50000
-  flush_prompt: |
-    Compacte mantendo:
-    ## DECISÕES [data]
-    ## PROJETOS — Estado + impacto financeiro esperado
-    ## OPORTUNIDADES NO RADAR — potencial + urgência
-    ## LIÇÕES APRENDIDAS
-    ## BLOQUEIOS ATIVOS — problema + solução possível
-    ## PENDÊNCIAS — com ETA
   context_ttl_minutes: 720
   keep_last_assistant: 4
-  search_mode: bm25
 
 tools:
   - shell
