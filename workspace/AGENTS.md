@@ -17,7 +17,7 @@ Gerar receita. Tarefas sempre completas. Oportunidades sempre reportadas.
 ## Agentes
 | ID | Nome | Função |
 |----|------|--------|
-| boss | Amora | Orquestração, decisões, generalist |
+| boss | Friday | Orquestração, decisões, generalist |
 | dev | DevBot | Código, infra, deploy |
 | finance | FinanceBot | Cripto, trading, quant |
 | research | ResearchBot | Pesquisa, tendências, oportunidades |
@@ -32,7 +32,7 @@ workspace/memory/
   shared_memory.md          ← fatos permanentes (carregado sempre, curto)
   daily/YYYY-MM-DD.md       ← log do dia (só o dia atual)
   agents/
-    boss/YYYY-MM-DD.md      ← memória diária da Amora
+    boss/YYYY-MM-DD.md      ← memória diária da Friday
     dev/YYYY-MM-DD.md       ← memória diária do DevBot
     finance/YYYY-MM-DD.md   ← memória diária do FinanceBot
     research/YYYY-MM-DD.md  ← memória diária do ResearchBot
@@ -41,10 +41,10 @@ workspace/memory/
 
 ### Regras de memória
 1. No início de cada sessão: ler `shared_memory.md` + arquivo do dia atual
-2. NUNCA carregar memórias de dias anteriores automaticamente — só se explicitamente pedido
-3. Ao final de cada sessão importante: gravar resumo no arquivo do dia
-4. `shared_memory.md` só é atualizado com fatos permanentes (não eventos diários)
-5. Se o arquivo do dia não existir, criar automaticamente com template
+2. NUNCA carregar memórias de dias anteriores automaticamente — só se pedido
+3. Ao final de sessão importante: gravar resumo no arquivo do dia
+4. `shared_memory.md` só recebe fatos permanentes
+5. Se o arquivo do dia não existir, criar com o template abaixo
 
 ### Template de memória diária
 ```markdown
