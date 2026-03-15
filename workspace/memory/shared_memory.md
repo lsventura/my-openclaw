@@ -1,58 +1,33 @@
-# Memória Compartilhada — Todos os Agentes
+# Memória Compartilhada — Fatos Permanentes
 
-Atualizado em: 2026-03-15
+> Este arquivo é carregado por TODOS os agentes a cada sessão.
+> Mantenha ENXUTO — só fatos que não mudam ou mudam raramente.
+> Eventos diários vão em workspace/memory/daily/YYYY-MM-DD.md
 
 ---
 
-## PERFIL DO LEONARDO
+## PERFIL
+- Leonardo Ventura, 29 anos, São Paulo - Brasil
+- Programador Python autodidata, empreendedor, trader
+- Capital limitado: prefere free-tier e open-source
+- Interface: Telegram | Idioma: PT-BR
 
-- **Nome:** Leonardo Ventura, 29 anos, São Paulo - Brasil
-- **Idioma:** Português brasileiro
-- **Profissão:** Programador autodidata (Python como linguagem principal)
-- **Objetivo principal:** Gerar receita — projetos que pagam as contas e escalam
-- **Estilo de trabalho:** Noturno, intenso, experimental — testa muito antes de escalar
-- **Recursos:** Capital limitado, prefere free-tier e open-source
-- **Interface com agentes:** Telegram
-- **Hobby/saúde:** Academia diariamente
-- **Aprendizado atual:** Inglês formal
+## PROJETOS ATIVOS
+- **Crypto Bot**: Binance Futures, Python, IA multi-agente — status: em desenvolvimento
+- **3D Printing**: brinquedos sensoriais, Mercado Livre — status: early stage
+- **OpenClaw**: sistema de agentes — status: configurando
 
-## PROJETOS — Estado Atual
+## STACK PRINCIPAL
+Python, PostgreSQL, Docker, Binance API, CCXT, LangChain, Telegram Bot API,
+Oracle Cloud Free Tier, DigitalOcean, GitHub Actions
 
-### 🤖 Crypto Trading Bot (PRIORIDADE ALTA)
-- Stack: Python, Binance Futures API, multi-agente IA
-- Status: em desenvolvimento ativo
-- Objetivo: lucro consistente automatizado, capital inicial pequeno
-- Pendência: estratégia validada por backtesting antes de capital real
-- Potencial de receita: recorrente, 24/7, escalável
+## DECISÕES FIXAS
+- Provider: OpenRouter (API única)
+- Sandbox: desligado (acesso total ao servidor)
+- Workspace compartilhado: ~/.openclaw/workspace
+- Modelos pagos: Devstral 2 (dev) + MiniMax M2.1 (boss/finance)
+- $5 alocados no OpenRouter
 
-### 🖨️ 3D Printing Business
-- Produtos: brinquedos sensoriais, itens customizados
-- Canal: Mercado Livre
-- Status: early stage
-- Potencial de receita: imediato, baixo custo de entrada
-
-### 🦞 OpenClaw Setup
-- Status: configurado em 2026-03-15
-- Workspace compartilhado ativo entre todos os agentes
-- Modelos: Devstral 2 (dev), MiniMax M2.1 (boss/finance), gratuitos como fallback
-- Objetivo: automação total da vida produtiva do Leonardo
-
-## DECISÕES IMPORTANTES
-
-- 2026-03-15: OpenRouter como provider único (uma API key para tudo)
-- 2026-03-15: Workspace compartilhado entre todos os agentes
-- 2026-03-15: Sandbox desligado — acesso total ao servidor
-- 2026-03-15: $5 alocados no OpenRouter (Devstral 2 + MiniMax M2.1)
-- 2026-03-15: Foco dos agentes = gerar receita, não só executar tarefas
-
-## OPORTUNIDADES IDENTIFICADAS
-
-_(agentes devem atualizar esta seção quando identificarem algo relevante)_
-
-## PENDÊNCIAS ABERTAS
-
-- [ ] Testar gateway do OpenClaw após aplicar novo config
-- [ ] Rodar `openclaw doctor` e confirmar zero erros
-- [ ] Configurar variáveis de ambiente no servidor (TELEGRAM_USER_ID, BINANCE_*)
-- [ ] Backtesting da estratégia do crypto bot
-- [ ] Primeira listagem no Mercado Livre (3D printing)
+## MEMÓRIA DIÁRIA
+Ver workspace/memory/daily/[DATA].md para eventos do dia.
+Ver workspace/memory/agents/[agente]/[DATA].md para memória específica.
