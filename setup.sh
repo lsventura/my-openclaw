@@ -1,58 +1,301 @@
-#!/bin/bash
-# Setup completo do OpenClaw — rodar uma vez após git pull
+#!/usr/bin/env bash
 set -e
 
-echo "🦞 Iniciando setup do OpenClaw..."
+echo "🦞 OpenClaw Setup — Friday AI System"
+echo "======================================"
 
-# 1. Copiar config base
-cp config/openclaw.json ~/.openclaw/openclaw.json
-chmod 600 ~/.openclaw/openclaw.json
-echo "[OK] config copiado"
+# ── 1. Variáveis de ambiente ──────────────────────────────────────────────────
+if [ ! -f .env ]; then
+  echo "❌ Arquivo .env não encontrado. Copie .env.example e preencha as chaves."
+  exit 1
+fi
 
-# 2. Registrar OpenRouter como provider via openclaw configure
-echo ""
-echo "==> Configurando OpenRouter como provider de modelos..."
-openclaw configure --provider openrouter --api-key "$OPENROUTER_API_KEY" 2>/dev/null || \
-openclaw config set models.providers.openrouter.apiKey "$OPENROUTER_API_KEY"
-echo "[OK] OpenRouter configurado"
+set -a; source .env; set +a
 
-# 3. Copiar agentes para o diretório do openclaw
-echo ""
-echo "==> Copiando agentes..."
-mkdir -p ~/.openclaw/agents
-for f in agents/*.yaml; do
-  agent_id=$(grep '^id:' "$f" | awk '{print $2}')
-  mkdir -p ~/.openclaw/agents/$agent_id
-  cp "$f" ~/.openclaw/agents/$agent_id/agent.yaml 2>/dev/null || \
-  cp "$f" ~/.openclaw/agents/$agent_id/config.yaml 2>/dev/null || \
-  cp "$f" ~/.openclaw/agents/$agent_id/
-  echo "[OK] $agent_id"
+REQUIRED_VARS=(OPENROUTER_API_KEY TELEGRAM_BOT_TOKEN TELEGRAM_USER_ID BINANCE_API_KEY BINANCE_API_SECRET)
+for var in "${REQUIRED_VARS[@]}"; do
+  if [ -z "${!var}" ]; then
+    echo "❌ Variável $var não definida no .env"
+    exit 1
+  fi
 done
 
-# 4. Criar estrutura de memória
-bash scripts/create_daily_memory.sh
+echo "✅ Variáveis de ambiente OK"
 
-# 5. Otimizações de performance
-export NODE_COMPILE_CACHE=/var/tmp/openclaw-compile-cache
-export OPENCLAW_NO_RESPAWN=1
-mkdir -p /var/tmp/openclaw-compile-cache
+# ── 2. Dependências do sistema ────────────────────────────────────────────────
+echo "📦 Instalando dependências..."
+apt-get update -qq
+apt-get install -y -qq jq ripgrep curl git
 
-# Persistir no bashrc se ainda não tiver
-grep -q 'NODE_COMPILE_CACHE' ~/.bashrc || cat >> ~/.bashrc << 'EOF'
-export NODE_COMPILE_CACHE=/var/tmp/openclaw-compile-cache
-export OPENCLAW_NO_RESPAWN=1
+# ── 3. Node.js ────────────────────────────────────────────────────────────────
+if ! command -v node &> /dev/null; then
+  echo "📦 Instalando Node.js 22..."
+  curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+  apt-get install -y nodejs
+fi
+echo "✅ Node.js $(node --version)"
+
+# ── 4. OpenClaw ───────────────────────────────────────────────────────────────
+if ! command -v openclaw &> /dev/null; then
+  echo "📦 Instalando OpenClaw..."
+  npm install -g openclaw
+fi
+echo "✅ OpenClaw $(openclaw --version 2>/dev/null || echo 'instalado')"
+
+# ── 5. Config principal ───────────────────────────────────────────────────────
+echo "⚙️  Configurando openclaw.json..."
+mkdir -p ~/.openclaw
+
+# Gera token do gateway se não existir
+GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN:-$(openssl rand -hex 24)}
+
+cat > ~/.openclaw/openclaw.json << EOF
+{
+  "\$schema": "https://openclaw.ai/schema/config.json",
+  "meta": {
+    "lastTouchedVersion": "2026.3.13",
+    "lastTouchedAt": "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"
+  },
+  "env": {
+    "OPENROUTER_API_KEY": "\${OPENROUTER_API_KEY}",
+    "TELEGRAM_BOT_TOKEN": "\${TELEGRAM_BOT_TOKEN}",
+    "TELEGRAM_USER_ID": "\${TELEGRAM_USER_ID}",
+    "BINANCE_API_KEY": "\${BINANCE_API_KEY}",
+    "BINANCE_API_SECRET": "\${BINANCE_API_SECRET}"
+  },
+  "wizard": {
+    "lastRunAt": "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)",
+    "lastRunVersion": "2026.3.13",
+    "lastRunCommand": "configure",
+    "lastRunMode": "local"
+  },
+  "auth": {
+    "profiles": {
+      "openrouter:default": {
+        "provider": "openrouter",
+        "mode": "api_key"
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "openrouter/auto"
+      },
+      "models": {
+        "openrouter/deepseek/deepseek-v3.2": {},
+        "openrouter/deepseek/deepseek-r1-0528": {},
+        "openrouter/google/gemini-2.5-flash": {},
+        "openrouter/google/gemini-2.5-pro": {},
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free": {}
+      },
+      "workspace": "~/.openclaw/workspace",
+      "memorySearch": { "enabled": false },
+      "compaction": { "mode": "safeguard" },
+      "sandbox": { "mode": "off" }
+    }
+  },
+  "tools": {
+    "profile": "full",
+    "elevated": {
+      "enabled": true,
+      "allowFrom": {
+        "telegram": ["\${TELEGRAM_USER_ID}"]
+      }
+    }
+  },
+  "commands": {
+    "native": "auto",
+    "nativeSkills": "auto",
+    "restart": true,
+    "ownerDisplay": "raw"
+  },
+  "channels": {
+    "telegram": {
+      "enabled": true,
+      "dmPolicy": "open",
+      "botToken": "\${TELEGRAM_BOT_TOKEN}",
+      "allowFrom": ["*"],
+      "groupPolicy": "open",
+      "streaming": "partial"
+    }
+  },
+  "gateway": {
+    "port": 3000,
+    "mode": "local",
+    "bind": "lan",
+    "controlUi": {
+      "allowedOrigins": ["http://localhost:3000", "http://127.0.0.1:3000"]
+    },
+    "auth": {
+      "mode": "token",
+      "token": "$GATEWAY_TOKEN"
+    }
+  }
+}
 EOF
 
-# 6. Reiniciar gateway
-screen -S friday -X quit 2>/dev/null || true
-sleep 1
-screen -dmS friday openclaw gateway
+echo "✅ openclaw.json configurado"
+
+# ── 6. Auth OpenRouter ────────────────────────────────────────────────────────
+echo "🔑 Configurando auth OpenRouter..."
+mkdir -p ~/.openclaw/agents/main/agent
+cat > ~/.openclaw/agents/main/agent/auth-profiles.json << EOF
+{
+  "openrouter:default": {
+    "provider": "openrouter",
+    "mode": "api_key",
+    "apiKey": "$OPENROUTER_API_KEY"
+  }
+}
+EOF
+echo "✅ Auth OpenRouter configurado"
+
+# ── 7. Identidades dos agentes ────────────────────────────────────────────────
+echo "🤖 Configurando identidades dos agentes..."
+
+# Friday (main)
+cp config/identity-friday.md ~/.openclaw/agents/main/agent/IDENTITY.md
+
+# Researcher
+mkdir -p ~/.openclaw/agents/researcher/agent
+cp config/identity-researcher.md ~/.openclaw/agents/researcher/agent/IDENTITY.md
+cat > ~/.openclaw/agents/researcher/agent/auth-profiles.json << EOF
+{
+  "openrouter:default": {
+    "provider": "openrouter",
+    "mode": "api_key",
+    "apiKey": "$OPENROUTER_API_KEY"
+  }
+}
+EOF
+
+# Dev
+mkdir -p ~/.openclaw/agents/dev/agent
+cp config/identity-dev.md ~/.openclaw/agents/dev/agent/IDENTITY.md
+cat > ~/.openclaw/agents/dev/agent/auth-profiles.json << EOF
+{
+  "openrouter:default": {
+    "provider": "openrouter",
+    "mode": "api_key",
+    "apiKey": "$OPENROUTER_API_KEY"
+  }
+}
+EOF
+
+# Trader
+mkdir -p ~/.openclaw/agents/trader/agent
+cp config/identity-trader.md ~/.openclaw/agents/trader/agent/IDENTITY.md
+cat > ~/.openclaw/agents/trader/agent/auth-profiles.json << EOF
+{
+  "openrouter:default": {
+    "provider": "openrouter",
+    "mode": "api_key",
+    "apiKey": "$OPENROUTER_API_KEY"
+  }
+}
+EOF
+
+echo "✅ Identidades configuradas"
+
+# ── 8. Skills ─────────────────────────────────────────────────────────────────
+echo "🛠️  Instalando skills..."
+npx clawhub install github --force 2>/dev/null || true
+npx clawhub install tmux --force 2>/dev/null || true
+npx clawhub install summarize --force 2>/dev/null || true
+npx clawhub install session-logs --force 2>/dev/null || true
+npx clawhub install web --force 2>/dev/null || true
+echo "✅ Skills instaladas"
+
+# ── 9. systemd service ────────────────────────────────────────────────────────
+echo "⚙️  Configurando systemd..."
+OPENCLAW_BIN=$(which openclaw)
+
+cat > /etc/systemd/system/openclaw.service << EOF
+[Unit]
+Description=OpenClaw Gateway
+After=network.target
+
+[Service]
+Type=simple
+User=root
+EnvironmentFile=$(pwd)/.env
+ExecStart=$OPENCLAW_BIN gateway
+Restart=always
+RestartSec=5
+Environment=HOME=/root
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+systemctl enable openclaw
+systemctl restart openclaw
 sleep 3
 
-# 7. Status final
+if systemctl is-active --quiet openclaw; then
+  echo "✅ Gateway rodando via systemd"
+else
+  echo "❌ Gateway falhou ao iniciar. Verifique: journalctl -u openclaw -n 20"
+  exit 1
+fi
+
+# ── 10. Cron jobs ─────────────────────────────────────────────────────────────
+echo "⏰ Configurando cron jobs..."
+TOKEN=$GATEWAY_TOKEN
+TO=$TELEGRAM_USER_ID
+URL="ws://127.0.0.1:3000"
+
+# Registra agentes
+openclaw agents add researcher --model openrouter/deepseek/deepseek-r1-0528 --workspace ~/.openclaw/workspace --non-interactive 2>/dev/null || true
+openclaw agents add dev --model openrouter/deepseek/deepseek-v3.2 --workspace ~/.openclaw/workspace --non-interactive 2>/dev/null || true
+openclaw agents add trader --model openrouter/google/gemini-2.5-flash --workspace ~/.openclaw/workspace --non-interactive 2>/dev/null || true
+
+sleep 2
+
+openclaw cron add \
+  --name "researcher-market-analysis" \
+  --agent researcher \
+  --every 30m \
+  --message "Analise o mercado de crypto futures agora. Pesquise as melhores oportunidades de scalping em BTC, ETH e SOL. Identifique a melhor estratégia atual com entry/exit rules, stop loss e take profit. Passe o resultado completo para o agente dev implementar." \
+  --announce \
+  --to $TO \
+  --timeout-seconds 120 \
+  --tz "America/Sao_Paulo" \
+  --url $URL \
+  --token $TOKEN 2>/dev/null || echo "⚠️  Cron researcher já existe ou falhou"
+
+openclaw cron add \
+  --name "dev-implement-strategy" \
+  --agent dev \
+  --every 1h \
+  --message "Verifique se o researcher passou alguma estratégia nova. Se sim, implemente o bot Python para Binance Futures com a estratégia recebida. Use testnet primeiro. Commit no GitHub após implementar." \
+  --announce \
+  --to $TO \
+  --timeout-seconds 180 \
+  --tz "America/Sao_Paulo" \
+  --url $URL \
+  --token $TOKEN 2>/dev/null || echo "⚠️  Cron dev já existe ou falhou"
+
+openclaw cron add \
+  --name "trader-monitor" \
+  --agent trader \
+  --every 15m \
+  --message "Verifique o status do bot de trading. Reporte para Leonardo: posições abertas, PnL atual, últimos sinais disparados. Se houver erro ou drawdown anormal, alerte imediatamente." \
+  --announce \
+  --to $TO \
+  --timeout-seconds 60 \
+  --tz "America/Sao_Paulo" \
+  --url $URL \
+  --token $TOKEN 2>/dev/null || echo "⚠️  Cron trader já existe ou falhou"
+
 echo ""
-openclaw models list
+echo "🎉 Setup completo!"
+echo "=================="
+echo "Gateway:   http://$(curl -s ifconfig.me):3000"
+echo "Telegram:  @ArbitSanches_bot"
+echo "Agentes:   friday, researcher, dev, trader"
 echo ""
-openclaw status
-echo ""
-echo "✅ Setup concluído! Friday está rodando."
+openclaw agents list
+openclaw cron list --url $URL --token $TOKEN
