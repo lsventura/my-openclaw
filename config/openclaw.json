@@ -1,16 +1,12 @@
 {
   "$schema": "https://openclaw.ai/schema/config.json",
-  "version": "1",
 
-  // ─── Gateway ────────────────────────────────────────────────
   "gateway": {
     "port": 3000,
-    "host": "0.0.0.0"
+    "mode": "local",
+    "bind": "lan"
   },
 
-  // ─── Canal Telegram ─────────────────────────────────────────
-  // CORREÇÃO: a chave correta é "channels.telegram", não "telegram"
-  // e o campo do token é "botToken", não "token"
   "channels": {
     "telegram": {
       "enabled": true,
@@ -24,97 +20,177 @@
     }
   },
 
-  // ─── Agentes ────────────────────────────────────────────────
   "agents": {
     "defaults": {
-      "provider": "openrouter",
-      "model": "moonshotai/kimi-k2",
-      "memory": {
-        "flush_threshold": 40000,
-        "context_ttl_minutes": 360,
-        "keep_last_assistant": 3,
-        "search_mode": "bm25"
+      "model": {
+        "primary": "deepseek/deepseek-r1-0528:free",
+        "fallbacks": [
+          "qwen/qwen3-coder-480b-a35b-instruct:free",
+          "google/gemini-2.0-flash-exp:free",
+          "meta-llama/llama-3.3-70b-instruct:free"
+        ]
       },
-      "tools": ["shell", "filesystem", "web_search"],
-
-      // ─── Sandbox com acesso real ───────────────────────────
-      // CORREÇÃO: workspaceAccess "rw" e rede "bridge" permitem
-      // que o agente leia/escreva no workspace real e acesse internet
       "sandbox": {
-        "mode": "all",
-        "scope": "agent",
-        "workspaceAccess": "rw",
-        "docker": {
-          "image": "openclaw-sandbox:bookworm-slim",
-          "network": "bridge",
-          "env": [
-            "OPENROUTER_API_KEY",
-            "TELEGRAM_BOT_TOKEN",
-            "TELEGRAM_USER_ID",
-            "BINANCE_API_KEY",
-            "BINANCE_API_SECRET"
-          ]
-        }
-      }
+        "mode": "off"
+      },
+      "workspace": "~/.openclaw/workspace"
     },
-
     "list": [
       {
         "id": "boss",
         "name": "Amora",
-        "config_file": "agents/boss.yaml",
-        "primary": true
+        "default": true,
+        "model": {
+          "primary": "deepseek/deepseek-r1-0528:free",
+          "fallbacks": [
+            "google/gemini-2.0-flash-exp:free",
+            "meta-llama/llama-3.3-70b-instruct:free"
+          ]
+        },
+        "tools": {
+          "profile": "full",
+          "elevated": {
+            "enabled": true
+          }
+        }
       },
       {
         "id": "dev",
         "name": "DevBot",
-        "config_file": "agents/dev.yaml"
+        "model": {
+          "primary": "qwen/qwen3-coder-480b-a35b-instruct:free",
+          "fallbacks": [
+            "deepseek/deepseek-r1-0528:free",
+            "google/gemini-2.0-flash-exp:free"
+          ]
+        },
+        "tools": {
+          "profile": "full",
+          "elevated": {
+            "enabled": true
+          }
+        }
       },
       {
         "id": "finance",
         "name": "FinanceBot",
-        "config_file": "agents/finance.yaml"
+        "model": {
+          "primary": "deepseek/deepseek-r1-0528:free",
+          "fallbacks": [
+            "google/gemini-2.5-pro-exp-03-25:free",
+            "google/gemini-2.0-flash-exp:free"
+          ]
+        },
+        "tools": {
+          "profile": "full"
+        }
       },
       {
         "id": "research",
         "name": "ResearchBot",
-        "config_file": "agents/research.yaml"
+        "model": {
+          "primary": "google/gemini-2.0-flash-exp:free",
+          "fallbacks": [
+            "google/gemini-2.5-pro-exp-03-25:free",
+            "meta-llama/llama-3.3-70b-instruct:free"
+          ]
+        },
+        "tools": {
+          "profile": "full"
+        }
       },
       {
         "id": "life",
         "name": "LifeBot",
-        "config_file": "agents/life.yaml"
+        "model": {
+          "primary": "meta-llama/llama-3.3-70b-instruct:free",
+          "fallbacks": [
+            "google/gemini-2.0-flash-exp:free"
+          ]
+        },
+        "tools": {
+          "profile": "full"
+        }
       }
     ]
   },
 
-  // ─── Providers ──────────────────────────────────────────────
-  "providers": {
-    "openrouter": {
-      "api_key": "${OPENROUTER_API_KEY}",
-      "base_url": "https://openrouter.ai/api/v1",
-      "default_model": "moonshotai/kimi-k2",
-      "free_models": [
-        "moonshotai/kimi-k2",
-        "google/gemini-2.5-pro-exp-03-25:free",
-        "google/gemini-2.0-flash-exp:free",
-        "meta-llama/llama-3.3-70b-instruct:free",
-        "deepseek/deepseek-chat:free",
-        "deepseek/deepseek-r1:free"
-      ]
+  "tools": {
+    "profile": "full",
+    "elevated": {
+      "enabled": true,
+      "allowFrom": {
+        "telegram": ["${TELEGRAM_USER_ID}"]
+      }
     }
   },
 
-  // ─── Workspace ──────────────────────────────────────────────
-  "workspace": {
-    "root": "./workspace",
-    "shared": true
+  "models": {
+    "mode": "merge",
+    "providers": {
+      "openrouter": {
+        "baseUrl": "https://openrouter.ai/api/v1",
+        "apiKey": "${OPENROUTER_API_KEY}",
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "deepseek/deepseek-r1-0528:free",
+            "name": "DeepSeek R1 0528 (free)",
+            "reasoning": true,
+            "input": ["text"],
+            "contextWindow": 131072,
+            "maxTokens": 32768
+          },
+          {
+            "id": "qwen/qwen3-coder-480b-a35b-instruct:free",
+            "name": "Qwen3 Coder 480B (free)",
+            "reasoning": false,
+            "input": ["text"],
+            "contextWindow": 131072,
+            "maxTokens": 32768
+          },
+          {
+            "id": "google/gemini-2.5-pro-exp-03-25:free",
+            "name": "Gemini 2.5 Pro Exp (free)",
+            "reasoning": true,
+            "input": ["text", "image"],
+            "contextWindow": 1000000,
+            "maxTokens": 65536
+          },
+          {
+            "id": "google/gemini-2.0-flash-exp:free",
+            "name": "Gemini 2.0 Flash Exp (free)",
+            "reasoning": false,
+            "input": ["text", "image"],
+            "contextWindow": 1000000,
+            "maxTokens": 8192
+          },
+          {
+            "id": "meta-llama/llama-3.3-70b-instruct:free",
+            "name": "Llama 3.3 70B (free)",
+            "reasoning": false,
+            "input": ["text"],
+            "contextWindow": 131072,
+            "maxTokens": 8192
+          },
+          {
+            "id": "deepseek/deepseek-chat:free",
+            "name": "DeepSeek Chat V3 (free)",
+            "reasoning": false,
+            "input": ["text"],
+            "contextWindow": 131072,
+            "maxTokens": 8192
+          }
+        ]
+      }
+    }
   },
 
-  // ─── Daemon ─────────────────────────────────────────────────
-  "daemon": {
-    "auto_start": true,
-    "restart_on_crash": true,
-    "log_file": "/var/log/openclaw/openclaw.log"
+  "env": {
+    "OPENROUTER_API_KEY": "${OPENROUTER_API_KEY}",
+    "TELEGRAM_BOT_TOKEN": "${TELEGRAM_BOT_TOKEN}",
+    "TELEGRAM_USER_ID": "${TELEGRAM_USER_ID}",
+    "BINANCE_API_KEY": "${BINANCE_API_KEY}",
+    "BINANCE_API_SECRET": "${BINANCE_API_SECRET}"
   }
 }
