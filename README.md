@@ -17,7 +17,7 @@ Friday (main)        → boss, interface com Leonardo via Telegram
 - **OpenRouter** — acesso a LLMs (DeepSeek R1, DeepSeek V3, Gemini Flash, auto)
 - **Telegram Bot** — interface de comunicação
 - **Binance Futures API** — execução de ordens
-- **DigitalOcean VPS** — Ubuntu 22.04, 1vCPU 1GB RAM
+- **DigitalOcean VPS** — Ubuntu 22.04, 4GB RAM (SFO3)
 - **systemd** — supervisor do gateway
 
 ## Modelos por agente
@@ -39,7 +39,7 @@ Friday (main)        → boss, interface com Leonardo via Telegram
 - `weather` — previsão do tempo
 - `healthcheck` — auditoria de segurança do servidor
 
-## Cron Jobs
+## Cron Jobs ativos
 
 | Job | Agente | Frequência | Função |
 |---|---|---|---|
@@ -50,8 +50,6 @@ Friday (main)        → boss, interface com Leonardo via Telegram
 ---
 
 ## Instalação do zero
-
-Ver `setup.sh` para instalação automatizada completa.
 
 ### Pré-requisitos
 
@@ -68,6 +66,40 @@ cp .env.example .env
 bash setup.sh
 ```
 
+> ⚠️ **Importante:** rode sempre de dentro da pasta `my-openclaw` (onde fica o `.env`), pois o systemd usa `EnvironmentFile=$(pwd)/.env`.
+
+---
+
+## Troubleshooting
+
+### Gateway cai logo após iniciar
+O systemd precisa apontar para o `.env` correto:
+```bash
+cat /etc/systemd/system/openclaw.service | grep EnvironmentFile
+```
+Se o caminho estiver errado, corrija:
+```bash
+# dentro da pasta do projeto:
+sed -i "s|EnvironmentFile=.*|EnvironmentFile=$(pwd)/.env|" /etc/systemd/system/openclaw.service
+systemctl daemon-reload && systemctl restart openclaw
+```
+
+### Warnings de "missing env var" no CLI
+Normal — o terminal local não tem as vars. O gateway via systemd funciona corretamente. Para suprimir localmente:
+```bash
+set -a; source .env; set +a
+```
+
+### Processo órfão travando o gateway
+```bash
+pkill -f "openclaw-gateway" && systemctl restart openclaw
+```
+
+### Ver logs do gateway
+```bash
+journalctl -fu openclaw
+```
+
 ---
 
 ## Backup e restore
@@ -75,14 +107,18 @@ bash setup.sh
 Arquivos críticos salvos neste repo:
 
 ```
-config/openclaw.json          → config principal do gateway
 config/identity-friday.md     → personalidade da Friday (main)
 config/identity-researcher.md → personalidade do researcher
 config/identity-dev.md        → personalidade do dev
 config/identity-trader.md     → personalidade do trader
+.env.example                  → template das chaves de API
+setup.sh                      → script de instalação completa
 ```
 
 Para restaurar em nova máquina:
 ```bash
+git clone https://github.com/lsventura/my-openclaw.git
+cd my-openclaw
+cp .env.example .env  # preenche as chaves
 bash setup.sh
 ```
